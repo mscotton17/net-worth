@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>worth.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f0f11;
+      --surface:   #17171a;
+      --border:    #2a2a30;
+      --accent:    #c8f060;
+      --secondary: #60f0a0;
+      --danger:    #f06060;
+      --text:      #e8e8ec;
+      --muted:     #6a6a72;
+      --dim:       #9a9aa2;
+      --radius:    12px;
+      --serif:     'DM Serif Display', Georgia, serif;
+      --mono:      'DM Mono', 'Courier New', monospace;
+      --sans:      'DM Sans', system-ui, sans-serif;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 36px 24px 72px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 52px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      font-family: var(--serif);
+      font-size: 34px;
+      color: var(--accent);
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+
+    .hdr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ── Buttons ────────────────────────────────── */
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--dim);
+      cursor: pointer;
+      transition: color .15s, border-color .15s, background .15s;
+      white-space: nowrap;
+    }
+    .btn:hover { color: var(--text); border-color: var(--dim); }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0d0d0f;
+      font-weight: 500;
+    }
+    .btn-primary:hover { background: #d5f672; border-color: #d5f672; color: #0d0d0f; }
+
+    .btn-sm { font-size: 11px; padding: 5px 10px; border-radius: 6px; }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--muted);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--border); background: var(--surface); }
+
+    .btn-del {
+      background: transparent;
+      border-color: transparent;
+      color: var(--danger);
+    }
+    .btn-del:hover { border-color: rgba(240,96,96,.3); background: rgba(240,96,96,.07); }
+
+    /* ── Hero ───────────────────────────────────── */
+
+    .hero { margin-bottom: 40px; }
+
+    .hero-lbl {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .hero-val {
+      font-family: var(--serif);
+      font-size: clamp(56px, 8vw, 96px);
+      line-height: 1;
+      color: var(--text);
+      margin-bottom: 14px;
+      transition: color .3s;
+    }
+    .hero-val.neg { color: var(--danger); }
+
+    .hero-delta {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .hero-delta .pos { color: var(--secondary); }
+    .hero-delta .neg-c { color: var(--danger); }
+
+    /* ── Summary Cards ──────────────────────────── */
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+
+    .card-lbl {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .card-val {
+      font-family: var(--mono);
+      font-size: 22px;
+      color: var(--text);
+    }
+    .card-val.a { color: var(--secondary); }
+    .card-val.l { color: var(--danger); }
+
+    /* ── Panels / Sections ──────────────────────── */
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .panel-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+
+    .mb { margin-bottom: 24px; }
+
+    /* ── Chart ──────────────────────────────────── */
+
+    .chart-wrap { position: relative; height: 260px; }
+    .chart-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 260px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Two-column grid ────────────────────────── */
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+      align-items: start;
+    }
+
+    /* ── Category Breakdown ─────────────────────── */
+
+    .cat-list { display: flex; flex-direction: column; gap: 16px; }
+
+    .cat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .cat-name {
+      font-size: 13px;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cat-amt {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--dim);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .bar-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width .4s ease;
+    }
+
+    /* ── Snapshot History ───────────────────────── */
+
+    .snap-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .snap-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      gap: 12px;
+    }
+
+    .snap-date {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .snap-delta {
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .snap-delta.up { color: var(--secondary); }
+    .snap-delta.dn { color: var(--danger); }
+
+    .snap-nw {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--text);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .snap-nw.neg { color: var(--danger); }
+
+    /* ── Entries Table ──────────────────────────── */
+
+    .tbl-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+    thead th {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-align: left;
+      padding: 0 12px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    thead th:first-child { padding-left: 0; }
+
+    tbody td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(42,42,48,.55);
+      vertical-align: middle;
+    }
+    tbody td:first-child { padding-left: 0; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      padding: 3px 7px;
+      border-radius: 4px;
+    }
+    .badge.asset { background: rgba(96,240,160,.10); color: var(--secondary); border: 1px solid rgba(96,240,160,.2); }
+    .badge.liability { background: rgba(240,96,96,.10); color: var(--danger); border: 1px solid rgba(240,96,96,.2); }
+
+    .e-amt { font-family: var(--mono); font-size: 14px; }
+    .e-amt.a { color: var(--secondary); }
+    .e-amt.l { color: var(--danger); }
+
+    .e-cat { font-size: 12px; color: var(--muted); }
+    .e-date { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+    .row-act { display: flex; gap: 4px; justify-content: flex-end; }
+
+    /* ── Empty states ───────────────────────────── */
+
+    .empty {
+      padding: 30px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* ── Modal ──────────────────────────────────── */
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,15,17,.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(28px);
+      transition: transform .32s cubic-bezier(.16,1,.3,1);
+    }
+    .overlay.open .modal { transform: translateY(0); }
+
+    .modal-title {
+      font-family: var(--serif);
+      font-size: 26px;
+      color: var(--text);
+      margin-bottom: 22px;
+    }
+
+    /* Type toggle */
+
+    .type-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+    }
+
+    .tog {
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .tog:hover { color: var(--text); }
+    .tog.on-asset { background: rgba(96,240,160,.13); color: var(--secondary); }
+    .tog.on-liab  { background: rgba(240,96,96,.13);  color: var(--danger); }
+
+    /* Fields */
+
+    .field { margin-bottom: 18px; }
+
+    .field-lbl {
+      display: block;
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    input[type=text], input[type=number], select {
+      width: 100%;
+      font-family: var(--sans);
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color .15s;
+      -webkit-appearance: none;
+    }
+    input[type=text]:focus, input[type=number]:focus, select:focus { border-color: var(--accent); }
+    select option { background: #17171a; }
+
+    .modal-foot {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .modal-foot .btn { flex: 1; justify-content: center; padding: 12px; font-size: 13px; }
+
+    /* ── Scrollbar ──────────────────────────────── */
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Responsive ─────────────────────────────── */
+
+    @media (max-width: 768px) {
+      body { padding: 20px 16px 56px; }
+      .cards { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .app-header { margin-bottom: 36px; }
+      .field-row { grid-template-columns: 1fr; }
+      .modal { padding: 24px 20px; }
+      thead th, tbody td { padding-left: 8px; padding-right: 8px; }
+      thead th:first-child, tbody td:first-child { padding-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════ -->
+<header class="app-header">
+  <div class="logo">worth.</div>
+  <div class="hdr-actions">
+    <button class="btn" onclick="triggerCSV()">CSV Import</button>
+    <button class="btn" onclick="triggerJSON()">Import JSON</button>
+    <button class="btn" onclick="doExport()">Export JSON</button>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-lbl">Net Worth</div>
+  <div class="hero-val" id="heroVal">$0</div>
+  <div class="hero-delta" id="heroDelta">—</div>
+</section>
+
+<!-- ════════════════════════════════════════════════
+     SUMMARY CARDS
+════════════════════════════════════════════════ -->
+<div class="cards">
+  <div class="card">
+    <div class="card-lbl">Total Assets</div>
+    <div class="card-val a" id="cAssets">$0</div>
+  </div>
+  <div class="card">
+    <div class="card-lbl">Total Liabilities</div>
+    <div class="card-val l" id="cLiab">$0</div>
+  </div>
+  <div class="card">
+    <div class="card-lbl">Snapshots</div>
+    <div class="card-val" id="cSnaps">0</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     CHART
+════════════════════════════════════════════════ -->
+<div class="panel mb">
+  <div class="panel-hdr">
+    <div class="panel-title">Net Worth Over Time</div>
+  </div>
+  <div id="chartWrap" class="chart-wrap"><canvas id="nwChart"></canvas></div>
+  <div id="chartEmpty" class="chart-empty" style="display:none">Record snapshots to see your progress over time</div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     CATEGORY BREAKDOWN + SNAPSHOT HISTORY
+════════════════════════════════════════════════ -->
+<div class="two-col">
+
+  <div class="panel">
+    <div class="panel-hdr"><div class="panel-title">Category Breakdown</div></div>
+    <div id="catList" class="cat-list"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title">Snapshot History</div>
+      <button class="btn btn-primary btn-sm" onclick="recordSnapshot()">Record Snapshot</button>
+    </div>
+    <div id="snapList" class="snap-list"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ENTRIES TABLE
+════════════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-hdr">
+    <div class="panel-title">All Entries</div>
+    <button class="btn btn-primary" onclick="openModal(null)">+ Add Entry</button>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Category</th>
+          <th>Amount</th>
+          <th>Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="entriesTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ADD / EDIT MODAL
+════════════════════════════════════════════════ -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-title" id="modalTitle">Add Entry</div>
+
+    <div class="type-toggle">
+      <button class="tog" id="togA" onclick="setType('asset')">Asset</button>
+      <button class="tog" id="togL" onclick="setType('liability')">Liability</button>
+    </div>
+
+    <div class="field">
+      <label class="field-lbl" for="fName">Name</label>
+      <input type="text" id="fName" placeholder="e.g. Savings Account" autocomplete="off">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-lbl" for="fCat">Category</label>
+        <select id="fCat"></select>
+      </div>
+      <div class="field">
+        <label class="field-lbl" for="fAmt">Amount ($)</label>
+        <input type="number" id="fAmt" placeholder="0" min="0" step="any">
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="csvInput"  accept=".csv,text/csv"          style="display:none" onchange="onCSV(event)">
+<input type="file" id="jsonInput" accept=".json,application/json" style="display:none" onchange="onJSON(event)">
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════
+// Constants
+// ════════════════════════════════════════════════
+
+const ASSET_CATS = [
+  'Cash & Savings', 'Investments', 'Retirement',
+  'Real Estate', 'Vehicles', 'Other Assets'
+];
+
+const LIAB_CATS = [
+  'Mortgage', 'Auto Loans', 'Student Loans',
+  'Credit Cards', 'Other Debt'
+];
+
+const CAT_COLOR = {
+  'Cash & Savings':  '#60f0a0',
+  'Investments':     '#c8f060',
+  'Retirement':      '#60c8f0',
+  'Real Estate':     '#f0c060',
+  'Vehicles':        '#a870f0',
+  'Other Assets':    '#60eef0',
+  'Mortgage':        '#f06060',
+  'Auto Loans':      '#f08a50',
+  'Student Loans':   '#f060a0',
+  'Credit Cards':    '#d060f0',
+  'Other Debt':      '#f04040',
+};
+
+const LS_KEY = 'worth_v1';
+
+// ════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════
+
+let app = { entries: [], snapshots: [] };
+let chart = null;
+let editId = null;
+let mType  = 'asset'; // current modal type
+
+// ════════════════════════════════════════════════
+// Persistence
+// ════════════════════════════════════════════════
+
+function persist() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(app)); } catch (_) {}
+}
+
+function hydrate() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (Array.isArray(d.entries) && Array.isArray(d.snapshots)) app = d;
+  } catch (_) {}
+}
+
+// ════════════════════════════════════════════════
+// Utilities
+// ════════════════════════════════════════════════
+
+function uid() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function fmt(n) {
+  const abs = Math.abs(Math.round(n));
+  return (n < 0 ? '-$' : '$') + abs.toLocaleString('en-US');
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso.length === 10 ? iso + 'T00:00:00' : iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function totals() {
+  let assets = 0, liabilities = 0;
+  for (const e of app.entries) {
+    const a = Number(e.amount) || 0;
+    if (e.type === 'asset') assets += a; else liabilities += a;
+  }
+  return { assets, liabilities, netWorth: assets - liabilities };
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════════════
+// Render — Hero
+// ════════════════════════════════════════════════
+
+function renderHero() {
+  const { netWorth } = totals();
+  const el = document.getElementById('heroVal');
+  el.textContent = fmt(netWorth);
+  el.classList.toggle('neg', netWorth < 0);
+
+  const dEl = document.getElementById('heroDelta');
+  if (app.snapshots.length > 0) {
+    const last  = [...app.snapshots].sort((a,b) => b.date.localeCompare(a.date))[0];
+    const delta = netWorth - last.netWorth;
+    const sign  = delta >= 0 ? '+' : '';
+    const cls   = delta >= 0 ? 'pos' : 'neg-c';
+    dEl.innerHTML = `vs last snapshot (${fmtDate(last.date)}):&nbsp;<span class="${cls}">${sign}${fmt(delta)}</span>`;
+  } else {
+    dEl.textContent = '—';
+  }
+}
+
+// ════════════════════════════════════════════════
+// Render — Cards
+// ════════════════════════════════════════════════
+
+function renderCards() {
+  const { assets, liabilities } = totals();
+  document.getElementById('cAssets').textContent = fmt(assets);
+  document.getElementById('cLiab').textContent   = fmt(liabilities);
+  document.getElementById('cSnaps').textContent  = app.snapshots.length;
+}
+
+// ════════════════════════════════════════════════
+// Render — Chart
+// ════════════════════════════════════════════════
+
+function renderChart() {
+  const sorted    = [...app.snapshots].sort((a,b) => a.date.localeCompare(b.date));
+  const chartWrap = document.getElementById('chartWrap');
+  const chartMiss = document.getElementById('chartEmpty');
+
+  if (sorted.length === 0) {
+    chartWrap.style.display = 'none';
+    chartMiss.style.display = 'flex';
+    if (chart) { chart.destroy(); chart = null; }
+    return;
+  }
+
+  chartWrap.style.display = 'block';
+  chartMiss.style.display = 'none';
+
+  const labels = sorted.map(s => fmtDate(s.date));
+  const nwD    = sorted.map(s => s.netWorth);
+  const aD     = sorted.map(s => s.assets);
+  const lD     = sorted.map(s => s.liabilities);
+
+  const mkDataset = (label, color, data) => ({
+    label,
+    data,
+    borderColor: color,
+    backgroundColor: color + '12',
+    pointBackgroundColor: color,
+    borderWidth: 2,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    tension: 0.35,
+    fill: false,
+  });
+
+  const datasets = [
+    mkDataset('Net Worth',   '#c8f060', nwD),
+    mkDataset('Assets',      '#60f0a0', aD),
+    mkDataset('Liabilities', '#f06060', lD),
+  ];
+
+  const monoFont = { family: "'DM Mono', monospace", size: 10 };
+
+  const opts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    animation: { duration: 500 },
+    plugins: {
+      legend: {
+        position: 'top',
+        align: 'end',
+        labels: {
+          color: '#6a6a72',
+          font: { family: "'DM Mono', monospace", size: 11 },
+          boxWidth: 14,
+          boxHeight: 2,
+          padding: 16,
+        },
+      },
+      tooltip: {
+        backgroundColor: '#1c1c20',
+        borderColor: '#2a2a30',
+        borderWidth: 1,
+        titleColor: '#6a6a72',
+        bodyColor: '#e8e8ec',
+        padding: 12,
+        titleFont: { family: "'DM Mono', monospace", size: 11 },
+        bodyFont:  { family: "'DM Mono', monospace", size: 13 },
+        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(42,42,48,.55)', tickColor: 'transparent' },
+        ticks: { color: '#6a6a72', font: monoFont, maxTicksLimit: 8 },
+        border: { color: 'rgba(42,42,48,.55)' },
+      },
+      y: {
+        grid: { color: 'rgba(42,42,48,.55)', tickColor: 'transparent' },
+        ticks: { color: '#6a6a72', font: monoFont, callback: v => fmt(v) },
+        border: { color: 'rgba(42,42,48,.55)' },
+      },
+    },
+  };
+
+  if (chart) {
+    chart.data.labels         = labels;
+    chart.data.datasets[0].data = nwD;
+    chart.data.datasets[1].data = aD;
+    chart.data.datasets[2].data = lD;
+    chart.update();
+  } else {
+    const ctx = document.getElementById('nwChart').getContext('2d');
+    chart = new Chart(ctx, { type: 'line', data: { labels, datasets }, options: opts });
+  }
+}
+
+// ════════════════════════════════════════════════
+// Render — Category Breakdown
+// ════════════════════════════════════════════════
+
+function renderCategories() {
+  const el = document.getElementById('catList');
+
+  if (app.entries.length === 0) {
+    el.innerHTML = '<div class="empty">No entries yet</div>';
+    return;
+  }
+
+  const groups = {};
+  let grand = 0;
+  for (const e of app.entries) {
+    const a = Number(e.amount) || 0;
+    groups[e.category] = (groups[e.category] || 0) + a;
+    grand += a;
+  }
+
+  const sorted = Object.entries(groups).sort((a,b) => b[1] - a[1]);
+
+  el.innerHTML = sorted.map(([name, amt]) => {
+    const pct   = grand > 0 ? (amt / grand * 100) : 0;
+    const color = CAT_COLOR[name] || '#6a6a72';
+    return `
+      <div>
+        <div class="cat-row">
+          <span class="cat-name">${esc(name)}</span>
+          <span class="cat-amt">${fmt(amt)}</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct.toFixed(2)}%;background:${color}"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// Render — Snapshot History
+// ════════════════════════════════════════════════
+
+function renderSnapshots() {
+  const el = document.getElementById('snapList');
+
+  if (app.snapshots.length === 0) {
+    el.innerHTML = '<div class="empty">No snapshots yet.<br>Hit "Record Snapshot" to capture today\'s totals.</div>';
+    return;
+  }
+
+  const sorted = [...app.snapshots].sort((a,b) => b.date.localeCompare(a.date));
+
+  el.innerHTML = sorted.map((s, i) => {
+    const neg = s.netWorth < 0;
+    let deltaHtml = '';
+    if (i < sorted.length - 1) {
+      const prev  = sorted[i + 1];
+      const delta = s.netWorth - prev.netWorth;
+      const sign  = delta >= 0 ? '+' : '';
+      const cls   = delta >= 0 ? 'up' : 'dn';
+      deltaHtml = `<div class="snap-delta ${cls}">${sign}${fmt(delta)}</div>`;
+    }
+    return `
+      <div class="snap-item">
+        <div>
+          <div class="snap-date">${fmtDate(s.date)}</div>
+          ${deltaHtml}
+        </div>
+        <div class="snap-nw${neg ? ' neg' : ''}">${fmt(s.netWorth)}</div>
+      </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// Render — Entries Table
+// ════════════════════════════════════════════════
+
+function renderEntries() {
+  const tbody = document.getElementById('entriesTbody');
+
+  if (app.entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No entries yet — add your first one!</div></td></tr>';
+    return;
+  }
+
+  const sorted = [...app.entries].sort((a,b) => {
+    if (a.type !== b.type) return a.type === 'asset' ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  tbody.innerHTML = sorted.map(e => {
+    const ia   = e.type === 'asset';
+    const date = fmtDate(e.updatedAt);
+    return `
+      <tr>
+        <td>${esc(e.name)}</td>
+        <td><span class="badge ${ia ? 'asset' : 'liability'}">${ia ? 'asset' : 'liability'}</span></td>
+        <td class="e-cat">${esc(e.category)}</td>
+        <td><span class="e-amt ${ia ? 'a' : 'l'}">${fmt(e.amount)}</span></td>
+        <td class="e-date">${date}</td>
+        <td>
+          <div class="row-act">
+            <button class="btn btn-sm btn-ghost" data-id="${esc(e.id)}" onclick="openModal(this.dataset.id)">Edit</button>
+            <button class="btn btn-sm btn-del"   data-id="${esc(e.id)}" onclick="deleteEntry(this.dataset.id)">Delete</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// Render All
+// ════════════════════════════════════════════════
+
+function render() {
+  renderHero();
+  renderCards();
+  renderChart();
+  renderCategories();
+  renderSnapshots();
+  renderEntries();
+}
+
+// ════════════════════════════════════════════════
+// Modal
+// ════════════════════════════════════════════════
+
+function openModal(id) {
+  editId = id || null;
+  document.getElementById('modalTitle').textContent = editId ? 'Edit Entry' : 'Add Entry';
+  document.getElementById('fName').value = '';
+  document.getElementById('fAmt').value  = '';
+
+  let typeToSet = 'asset';
+  if (editId) {
+    const entry = app.entries.find(e => e.id === editId);
+    if (entry) {
+      typeToSet = entry.type;
+      document.getElementById('fName').value = entry.name;
+      document.getElementById('fAmt').value  = entry.amount;
+    }
+  }
+
+  mType = typeToSet;
+  refreshToggle();
+  refreshCats();
+
+  if (editId) {
+    const entry = app.entries.find(e => e.id === editId);
+    if (entry) document.getElementById('fCat').value = entry.category;
+  }
+
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('fName').focus(), 80);
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+function setType(t) {
+  mType = t;
+  refreshToggle();
+  refreshCats();
+}
+
+function refreshToggle() {
+  document.getElementById('togA').className = 'tog' + (mType === 'asset'     ? ' on-asset' : '');
+  document.getElementById('togL').className = 'tog' + (mType === 'liability' ? ' on-liab'  : '');
+}
+
+function refreshCats() {
+  const sel  = document.getElementById('fCat');
+  const cats = mType === 'asset' ? ASSET_CATS : LIAB_CATS;
+  sel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function submitEntry() {
+  const name   = document.getElementById('fName').value.trim();
+  const amount = parseFloat(document.getElementById('fAmt').value);
+  const cat    = document.getElementById('fCat').value;
+
+  if (!name)                           { alert('Please enter a name for this entry.');         return; }
+  if (isNaN(amount) || amount < 0)     { alert('Please enter a valid non-negative amount.');   return; }
+
+  const now = new Date().toISOString();
+  if (editId) {
+    const i = app.entries.findIndex(e => e.id === editId);
+    if (i > -1) app.entries[i] = { ...app.entries[i], name, type: mType, category: cat, amount, updatedAt: now };
+  } else {
+    app.entries.push({ id: uid(), name, type: mType, category: cat, amount, updatedAt: now });
+  }
+
+  persist();
+  closeModal();
+  render();
+}
+
+function deleteEntry(id) {
+  if (!confirm('Delete this entry? This cannot be undone.')) return;
+  app.entries = app.entries.filter(e => e.id !== id);
+  persist();
+  render();
+}
+
+// ════════════════════════════════════════════════
+// Snapshots
+// ════════════════════════════════════════════════
+
+function recordSnapshot() {
+  const t    = today();
+  const data = { date: t, ...totals() };
+  const idx  = app.snapshots.findIndex(s => s.date === t);
+  if (idx > -1) app.snapshots[idx] = data;
+  else app.snapshots.push(data);
+  persist();
+  render();
+}
+
+// ════════════════════════════════════════════════
+// Export / Import JSON
+// ════════════════════════════════════════════════
+
+function doExport() {
+  const blob = new Blob([JSON.stringify(app, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `worth-${today()}.json` });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function triggerJSON() {
+  const el = document.getElementById('jsonInput');
+  el.value = '';
+  el.click();
+}
+
+function onJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (!Array.isArray(d.entries) || !Array.isArray(d.snapshots))
+        throw new Error('Missing entries or snapshots arrays');
+      if ((app.entries.length > 0 || app.snapshots.length > 0) &&
+          !confirm('This will overwrite all existing data. Continue?')) return;
+      app = d;
+      persist();
+      render();
+      alert('Import successful!');
+    } catch (err) {
+      alert('Could not import JSON: ' + err.message);
+    }
+  };
+  r.readAsText(file);
+}
+
+// ════════════════════════════════════════════════
+// Import CSV
+// ════════════════════════════════════════════════
+
+function triggerCSV() {
+  const el = document.getElementById('csvInput');
+  el.value = '';
+  el.click();
+}
+
+function onCSV(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) { alert('The CSV file is empty.'); return; }
+
+    // Skip header row if first column is non-numeric (looks like a header)
+    let start = 0;
+    const first = csvRow(lines[0]);
+    if (first.length > 0 && isNaN(parseFloat(first[0].replace(/[$,]/g, '')))) start = 1;
+
+    let count = 0;
+    const now = new Date().toISOString();
+    for (let i = start; i < lines.length; i++) {
+      const [nameR, typeR, catR, amtR] = csvRow(lines[i]);
+      if (!nameR || !typeR) continue;
+      const name   = nameR.trim();
+      const type   = typeR.trim().toLowerCase();
+      const catIn  = (catR || '').trim();
+      const amount = parseFloat((amtR || '').replace(/[$,\s]/g, ''));
+      if (!name || !['asset','liability'].includes(type) || isNaN(amount)) continue;
+      const validCats = type === 'asset' ? ASSET_CATS : LIAB_CATS;
+      const category  = validCats.includes(catIn) ? catIn : (type === 'asset' ? 'Other Assets' : 'Other Debt');
+      app.entries.push({ id: uid(), name, type, category, amount: Math.abs(amount), updatedAt: now });
+      count++;
+    }
+
+    if (count > 0) { persist(); render(); }
+    alert(`Imported ${count} entr${count === 1 ? 'y' : 'ies'} successfully.`);
+  };
+  r.readAsText(file);
+}
+
+function csvRow(row) {
+  const out = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < row.length; i++) {
+    const c = row[i];
+    if (c === '"') {
+      if (inQ && row[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      out.push(cur.trim()); cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+// ════════════════════════════════════════════════
+// Keyboard
+// ════════════════════════════════════════════════
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ════════════════════════════════════════════════
+// Boot
+// ════════════════════════════════════════════════
+
+hydrate();
+render();
+</script>
+</body>
+</html>
