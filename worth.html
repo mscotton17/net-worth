@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>worth.</title>
+  <title>Net Worth Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
@@ -25,6 +25,21 @@
       --serif:     'DM Serif Display', Georgia, serif;
       --mono:      'DM Mono', 'Courier New', monospace;
       --sans:      'DM Sans', system-ui, sans-serif;
+    }
+
+    body.light {
+      --bg:      #f2f2f5;
+      --surface: #ffffff;
+      --border:  #dcdce6;
+      --text:    #18181c;
+      --muted:   #808090;
+      --dim:     #505060;
+    }
+
+    /* Smooth theme transitions */
+    .theme-switching,
+    .theme-switching * {
+      transition: background .22s, background-color .22s, color .22s, border-color .22s !important;
     }
 
     html { font-size: 16px; }
@@ -53,10 +68,10 @@
 
     .logo {
       font-family: var(--serif);
-      font-size: 34px;
+      font-size: clamp(20px, 3vw, 28px);
       color: var(--accent);
       line-height: 1;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.3px;
     }
 
     .hdr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -496,8 +511,9 @@
      HEADER
 ════════════════════════════════════════════════ -->
 <header class="app-header">
-  <div class="logo">worth.</div>
+  <div class="logo">Net Worth Tracker</div>
   <div class="hdr-actions">
+    <button class="btn" id="themeBtn" onclick="toggleTheme()">☀ Light</button>
     <button class="btn" onclick="triggerCSV()">CSV Import</button>
     <button class="btn" onclick="triggerJSON()">Import JSON</button>
     <button class="btn" onclick="doExport()">Export JSON</button>
@@ -800,6 +816,13 @@ function renderChart() {
     mkDataset('Liabilities', '#f06060', lD),
   ];
 
+  const light      = document.body.classList.contains('light');
+  const gridColor  = light ? 'rgba(180,180,196,.6)'  : 'rgba(42,42,48,.55)';
+  const tickColor  = light ? '#808090' : '#6a6a72';
+  const tooltipBg  = light ? '#ffffff' : '#1c1c20';
+  const tooltipBdr = light ? '#dcdce6' : '#2a2a30';
+  const legendClr  = light ? '#808090' : '#6a6a72';
+
   const monoFont = { family: "'DM Mono', monospace", size: 10 };
 
   const opts = {
@@ -812,7 +835,7 @@ function renderChart() {
         position: 'top',
         align: 'end',
         labels: {
-          color: '#6a6a72',
+          color: legendClr,
           font: { family: "'DM Mono', monospace", size: 11 },
           boxWidth: 14,
           boxHeight: 2,
@@ -820,11 +843,11 @@ function renderChart() {
         },
       },
       tooltip: {
-        backgroundColor: '#1c1c20',
-        borderColor: '#2a2a30',
+        backgroundColor: tooltipBg,
+        borderColor: tooltipBdr,
         borderWidth: 1,
-        titleColor: '#6a6a72',
-        bodyColor: '#e8e8ec',
+        titleColor: tickColor,
+        bodyColor: light ? '#18181c' : '#e8e8ec',
         padding: 12,
         titleFont: { family: "'DM Mono', monospace", size: 11 },
         bodyFont:  { family: "'DM Mono', monospace", size: 13 },
@@ -833,14 +856,14 @@ function renderChart() {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(42,42,48,.55)', tickColor: 'transparent' },
-        ticks: { color: '#6a6a72', font: monoFont, maxTicksLimit: 8 },
-        border: { color: 'rgba(42,42,48,.55)' },
+        grid: { color: gridColor, tickColor: 'transparent' },
+        ticks: { color: tickColor, font: monoFont, maxTicksLimit: 8 },
+        border: { color: gridColor },
       },
       y: {
-        grid: { color: 'rgba(42,42,48,.55)', tickColor: 'transparent' },
-        ticks: { color: '#6a6a72', font: monoFont, callback: v => fmt(v) },
-        border: { color: 'rgba(42,42,48,.55)' },
+        grid: { color: gridColor, tickColor: 'transparent' },
+        ticks: { color: tickColor, font: monoFont, callback: v => fmt(v) },
+        border: { color: gridColor },
       },
     },
   };
@@ -1184,6 +1207,24 @@ function csvRow(row) {
 }
 
 // ════════════════════════════════════════════════
+// Theme toggle
+// ════════════════════════════════════════════════
+
+function toggleTheme() {
+  // Enable transitions just for the switch
+  document.body.classList.add('theme-switching');
+  setTimeout(() => document.body.classList.remove('theme-switching'), 280);
+
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('worth_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isLight ? '☽ Dark' : '☀ Light';
+
+  // Rebuild chart so colors match new theme
+  if (chart) { chart.destroy(); chart = null; }
+  renderChart();
+}
+
+// ════════════════════════════════════════════════
 // Keyboard
 // ════════════════════════════════════════════════
 
@@ -1194,6 +1235,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 // ════════════════════════════════════════════════
 
 hydrate();
+
+// Restore saved theme (dark is default — only apply class for light)
+if (localStorage.getItem('worth_theme') === 'light') {
+  document.body.classList.add('light');
+  document.getElementById('themeBtn').textContent = '☽ Dark';
+}
+
 render();
 </script>
 </body>
