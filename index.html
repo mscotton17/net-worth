@@ -612,6 +612,20 @@
   <div class="card">
     <div class="card-lbl">Total Liabilities</div>
     <div class="card-val l" id="cLiab">$0</div>
+    <div class="card-breakdown">
+      <div class="card-breakdown-row">
+        <span class="card-breakdown-lbl">Mortgage</span>
+        <span class="card-breakdown-val" id="cMortgage">$0</span>
+      </div>
+      <div class="card-breakdown-row">
+        <span class="card-breakdown-lbl">Student Loans</span>
+        <span class="card-breakdown-val" id="cStudentLoans">$0</span>
+      </div>
+      <div class="card-breakdown-row">
+        <span class="card-breakdown-lbl">Auto Loans</span>
+        <span class="card-breakdown-val" id="cAutoLoans">$0</span>
+      </div>
+    </div>
   </div>
   <div class="card">
     <div class="card-lbl">Snapshots</div>
@@ -1106,6 +1120,16 @@ function renderLiquidNetWorth() {
 // Render All
 // ════════════════════════════════════════════════
 
+function renderLiabilityBreakdown() {
+  const cats = { Mortgage: 'cMortgage', 'Student Loans': 'cStudentLoans', 'Auto Loans': 'cAutoLoans' };
+  for (const [cat, id] of Object.entries(cats)) {
+    const total = app.entries
+      .filter(e => e.type === 'liability' && e.category === cat)
+      .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    document.getElementById(id).textContent = fmt(total);
+  }
+}
+
 function render() {
   renderHero();
   renderCards();
@@ -1114,6 +1138,7 @@ function render() {
   renderSnapshots();
   renderEntries();
   renderAssetBreakdown();
+  renderLiabilityBreakdown();
   renderLiquidNetWorth();
 }
 
