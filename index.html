@@ -119,6 +119,14 @@
       margin: 4px 0;
     }
 
+    .settings-item-danger {
+      color: var(--danger);
+    }
+    .settings-item-danger:hover {
+      background: rgba(240, 96, 96, 0.08);
+      color: var(--danger);
+    }
+
     /* ── Buttons ────────────────────────────────── */
 
     .btn {
@@ -615,6 +623,8 @@
       <div class="settings-item" onclick="triggerCSV()">CSV Import</div>
       <div class="settings-item" onclick="triggerJSON()">Import JSON</div>
       <div class="settings-item" onclick="doExport()">Export JSON</div>
+      <div class="settings-divider"></div>
+      <div class="settings-item settings-item-danger" onclick="confirmDelete()">Delete All Data</div>
     </div>
   </div>
 </header>
@@ -1388,6 +1398,20 @@ function csvRow(row) {
   }
   out.push(cur.trim());
   return out;
+}
+
+function confirmDelete() {
+  document.getElementById('settingsDropdown').classList.remove('open');
+  const input = prompt('This will permanently delete all entries and snapshots.\n\nType DELETE to confirm:');
+  if (input === null) return;
+  if (input.trim() !== 'DELETE') {
+    alert('Incorrect confirmation. Type DELETE in all caps to delete all data.');
+    return;
+  }
+  app = { entries: [], snapshots: [] };
+  persist();
+  render();
+  alert('All data has been deleted.');
 }
 
 // ════════════════════════════════════════════════
