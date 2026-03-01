@@ -699,6 +699,19 @@
 
 <div class="panel mb">
   <div class="panel-hdr">
+    <div class="panel-title">Portfolio Breakdown</div>
+    <button class="btn btn-sm" onclick="openPortfolioModal()">+ Add Data</button>
+  </div>
+  <div class="two-col" style="align-items:center">
+    <div class="chart-wrap">
+      <canvas id="donutChart"></canvas>
+    </div>
+    <div id="donutLegend" class="cat-list"></div>
+  </div>
+</div>
+
+<div class="panel mb">
+  <div class="panel-hdr">
     <div class="panel-title">Net Worth History</div>
   </div>
   <div id="chartWrap" class="chart-wrap"><canvas id="nwChart"></canvas></div>
@@ -826,7 +839,7 @@ const LS_KEY = 'worth_v1';
 // State
 // ════════════════════════════════════════════════
 
-let app = { entries: [], snapshots: [], historicalYears: [] };
+let app = { entries: [], snapshots: [], historicalYears: [], portfolioData: [] };
 let chart = null;
 let editId = null;
 let mType  = 'asset'; // current modal type
@@ -846,6 +859,7 @@ function hydrate() {
     const d = JSON.parse(raw);
     if (Array.isArray(d.entries) && Array.isArray(d.snapshots)) {
       if (!Array.isArray(d.historicalYears)) d.historicalYears = [];
+      if (!Array.isArray(d.portfolioData)) d.portfolioData = [];
       app = d;
     }
   } catch (_) {}
@@ -1354,6 +1368,122 @@ function renderBarChart() {
   });
 }
 
+let donutChart = null;
+
+function openPortfolioModal() {
+  const currentYear = new Date().getFullYear();
+  document.getElementById('fPortYear').value = currentYear;
+  document.getElementById('fStocks').value = '';
+  document.getElementById('fBonds').value = '';
+  document.getElementById('fOther').value = '';
+
+  // Pre-fill if data exists for current year
+  const existing = (app.portfolioData || []).find(p => p.year === currentYear);
+  if (existing) {
+    document.getElementById('fStocks').value = existing.stocks;
+    document.getElementById('fBonds').value  = existing.bonds;
+    document.getElementById('fOther').value  = existing.other;
+  }
+
+  document.getElementById('portfolioOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fPortYear').focus(), 80);
+}
+
+function closePortfolioModal() {
+  document.getElementById('portfolioOverlay').classList.remove('open');
+}
+
+function portfolioOverlayClick(e) {
+  if (e.target === document.getElementById('portfolioOverlay')) closePortfolioModal();
+}
+
+function submitPortfolio() {
+  const year   = parseInt(document.getElementById('fPortYear').value);
+  const stocks = parseFloat(document.getElementById('fStocks').value) || 0;
+  const bonds  = parseFloat(document.getElementById('fBonds').value)  || 0;
+  const other  = parseFloat(document.getElementById('fOther').value)  || 0;
+
+  if (!year || isNaN(year)) { alert('Please enter a valid year.'); return; }
+  if (stocks + bonds + other === 0) { alert('Please enter at least one value.'); return; }
+
+  if (!Array.isArray(app.portfolioData)) app.portfolioData = [];
+
+  const existing = app.portfolioData.findIndex(p => p.year === year);
+  if (existing > -1) {
+    app.portfolioData[existing] = { year, stocks, bonds, other };
+  } else {
+    app.portfolioData.push({ year, stocks, bonds, other });
+  }
+
+  persist();
+  closePortfolioModal();
+  renderDonut();
+}
+
+function renderDonut() {
+  const ctx = document.getElementById('donutChart');
+  if (!ctx) return;
+  if (donutChart) { donutChart.destroy(); donutChart = null; }
+
+  // Use most recent year's data
+  const data = [...(app.portfolioData || [])].sort((a, b) => b.year - a.year)[0];
+  const legend = document.getElementById('donutLegend');
+
+  if (!data) {
+    legend.innerHTML = '<div class="empty">No portfolio data yet — click + Add Data</div>';
+    return;
+  }
+
+  const labels = ['Stocks', 'Bonds', 'Other'];
+  const values = [data.stocks, data.bonds, data.other];
+  const colors = ['rgba(96, 240, 160, 0.8)', 'rgba(96, 200, 240, 0.8)', 'rgba(200, 240, 96, 0.8)'];
+  const total  = values.reduce((s, v) => s + v, 0);
+
+  const isDark    = !document.body.classList.contains('light');
+  const tickColor = isDark ? '#6a6a72' : '#808090';
+
+  donutChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: isDark ? '#17171a' : '#ffffff',
+        borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: isDark ? '#1e1e22' : '#ffffff',
+          borderColor: isDark ? '#2a2a30' : '#dcdce6',
+          borderWidth: 1,
+          titleColor: isDark ? '#e8e8ec' : '#18181c',
+          bodyColor: tickColor,
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${fmt(ctx.parsed)} (${Math.round(ctx.parsed / total * 100)}%)`
+          }
+        }
+      }
+    }
+  });
+
+  // Render custom legend
+  legend.innerHTML = labels.map((lbl, i) => `
+    <div class="category-item" style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
+      <div style="flex:1;font-size:13px">${lbl}</div>
+      <div style="font-family:var(--mono);font-size:13px;color:var(--dim)">${fmt(values[i])}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:36px;text-align:right">${Math.round(values[i] / total * 100)}%</div>
+    </div>`).join('');
+}
+
 function render() {
   renderHero();
   renderCards();
@@ -1365,6 +1495,7 @@ function render() {
   renderLiabilityBreakdown();
   renderLiquidNetWorth();
   renderBarChart();
+  renderDonut();
 }
 
 // ════════════════════════════════════════════════
@@ -1614,6 +1745,8 @@ function toggleTheme() {
   renderChart();
   if (barChart) { barChart.destroy(); barChart = null; }
   renderBarChart();
+  if (donutChart) { donutChart.destroy(); donutChart = null; }
+  renderDonut();
 }
 
 // ════════════════════════════════════════════════
@@ -1655,6 +1788,32 @@ render();
     <div class="modal-foot">
       <button class="btn" onclick="closeYearModal()">Cancel</button>
       <button class="btn btn-primary" onclick="submitYear()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="portfolioOverlay" onclick="portfolioOverlayClick(event)">
+  <div class="modal" id="portfolioModal">
+    <div class="modal-title">Portfolio Breakdown</div>
+    <div class="field">
+      <label class="field-lbl" for="fPortYear">Year</label>
+      <input type="number" id="fPortYear" placeholder="e.g. 2024" min="1900" max="2100">
+    </div>
+    <div class="field">
+      <label class="field-lbl" for="fStocks">Stocks ($)</label>
+      <input type="number" id="fStocks" placeholder="0" min="0" step="any">
+    </div>
+    <div class="field">
+      <label class="field-lbl" for="fBonds">Bonds ($)</label>
+      <input type="number" id="fBonds" placeholder="0" min="0" step="any">
+    </div>
+    <div class="field">
+      <label class="field-lbl" for="fOther">Other ($)</label>
+      <input type="number" id="fOther" placeholder="0" min="0" step="any">
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closePortfolioModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitPortfolio()">Save</button>
     </div>
   </div>
 </div>
