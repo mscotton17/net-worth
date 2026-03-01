@@ -844,8 +844,10 @@ function hydrate() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     const d = JSON.parse(raw);
-    if (Array.isArray(d.entries) && Array.isArray(d.snapshots)) app = d;
-    if (!d.historicalYears) d.historicalYears = [];
+    if (Array.isArray(d.entries) && Array.isArray(d.snapshots)) {
+      if (!d.historicalYears) d.historicalYears = [];
+      app = d;
+    }
   } catch (_) {}
 }
 
