@@ -78,7 +78,46 @@
     }
     .logo .tracker { color: var(--accent); }
 
-    .hdr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .settings-wrap {
+      position: relative;
+    }
+
+    .settings-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px;
+      min-width: 180px;
+      z-index: 150;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .settings-dropdown.open { display: block; }
+
+    .settings-item {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--dim);
+      padding: 10px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+
+    .settings-item:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .settings-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
 
     /* ── Buttons ────────────────────────────────── */
 
@@ -566,11 +605,17 @@
 ════════════════════════════════════════════════ -->
 <header class="app-header">
   <div class="logo">Net Worth <span class="tracker">Tracker</span></div>
-  <div class="hdr-actions">
-    <button class="btn" id="themeBtn" onclick="toggleTheme()">☀ Light</button>
-    <button class="btn" onclick="triggerCSV()">CSV Import</button>
-    <button class="btn" onclick="triggerJSON()">Import JSON</button>
-    <button class="btn" onclick="doExport()">Export JSON</button>
+  <div class="settings-wrap">
+    <button class="btn" id="settingsBtn" onclick="toggleSettings()">⚙</button>
+    <div class="settings-dropdown" id="settingsDropdown">
+      <div class="settings-item" onclick="toggleTheme()">
+        <span id="themeLabel">☀ Light Mode</span>
+      </div>
+      <div class="settings-divider"></div>
+      <div class="settings-item" onclick="triggerCSV()">CSV Import</div>
+      <div class="settings-item" onclick="triggerJSON()">Import JSON</div>
+      <div class="settings-item" onclick="doExport()">Export JSON</div>
+    </div>
   </div>
 </header>
 
@@ -1349,6 +1394,18 @@ function csvRow(row) {
 // Theme toggle
 // ════════════════════════════════════════════════
 
+function toggleSettings() {
+  document.getElementById('settingsDropdown').classList.toggle('open');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (!document.getElementById('settingsBtn').contains(e.target) &&
+      !document.getElementById('settingsDropdown').contains(e.target)) {
+    document.getElementById('settingsDropdown').classList.remove('open');
+  }
+});
+
 function toggleTheme() {
   // Enable transitions just for the switch
   document.body.classList.add('theme-switching');
@@ -1356,7 +1413,7 @@ function toggleTheme() {
 
   const isLight = document.body.classList.toggle('light');
   localStorage.setItem('worth_theme', isLight ? 'light' : 'dark');
-  document.getElementById('themeBtn').textContent = isLight ? '☽ Dark' : '☀ Light';
+  document.getElementById('themeLabel').textContent = isLight ? '☽ Dark Mode' : '☀ Light Mode';
 
   // Rebuild chart so colors match new theme
   if (chart) { chart.destroy(); chart = null; }
