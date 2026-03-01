@@ -693,6 +693,15 @@
 ════════════════════════════════════════════════ -->
 <div class="panel mb">
   <div class="panel-hdr">
+    <div class="panel-title">Net Worth Breakdown</div>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="nwBarChart"></canvas>
+  </div>
+</div>
+
+<div class="panel mb">
+  <div class="panel-hdr">
     <div class="panel-title">Net Worth Over Time</div>
   </div>
   <div id="chartWrap" class="chart-wrap"><canvas id="nwChart"></canvas></div>
@@ -1185,6 +1194,112 @@ function renderLiabilityBreakdown() {
   }
 }
 
+let barChart = null;
+
+function renderBarChart() {
+  const ctx = document.getElementById('nwBarChart');
+  if (!ctx) return;
+  if (barChart) { barChart.destroy(); barChart = null; }
+
+  const LIQUID_CATS = ['Cash & Savings', 'Investments', 'Retirement'];
+
+  const yearMap = {};
+  for (const e of app.entries) {
+    const year = new Date(e.updatedAt).getFullYear();
+    if (!yearMap[year]) yearMap[year] = [];
+    yearMap[year].push(e);
+  }
+
+  const years = Object.keys(yearMap).sort();
+  if (years.length === 0) return;
+
+  const liquidData    = [];
+  const nonLiquidData = [];
+
+  for (const year of years) {
+    const entries = yearMap[year];
+    const latest = {};
+    for (const e of entries) {
+      if (!latest[e.name] || new Date(e.updatedAt) > new Date(latest[e.name].updatedAt)) {
+        latest[e.name] = e;
+      }
+    }
+    const deduped = Object.values(latest);
+    const assets      = deduped.filter(e => e.type === 'asset').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const liabilities = deduped.filter(e => e.type === 'liability').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const netWorth    = assets - liabilities;
+    const liquid      = deduped.filter(e => e.type === 'asset' && LIQUID_CATS.includes(e.category)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const nonLiquid   = Math.max(0, netWorth - liquid);
+
+    liquidData.push(liquid);
+    nonLiquidData.push(nonLiquid);
+  }
+
+  const isDark    = !document.body.classList.contains('light');
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const tickColor = isDark ? '#6a6a72' : '#808090';
+
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: years,
+      datasets: [
+        {
+          label: 'Liquid',
+          data: liquidData,
+          backgroundColor: 'rgba(96, 240, 160, 0.7)',
+          borderColor: 'rgba(96, 240, 160, 1)',
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          label: 'Non-Liquid',
+          data: nonLiquidData,
+          backgroundColor: 'rgba(200, 240, 96, 0.7)',
+          borderColor: 'rgba(200, 240, 96, 1)',
+          borderWidth: 1,
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: tickColor, font: { family: 'DM Mono', size: 11 }, boxWidth: 14 }
+        },
+        tooltip: {
+          backgroundColor: isDark ? '#1e1e22' : '#ffffff',
+          borderColor: isDark ? '#2a2a30' : '#dcdce6',
+          borderWidth: 1,
+          titleColor: isDark ? '#e8e8ec' : '#18181c',
+          bodyColor: tickColor,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: tickColor, font: { family: 'DM Mono', size: 11 } },
+          grid: { color: gridColor }
+        },
+        y: {
+          stacked: true,
+          ticks: {
+            color: tickColor,
+            font: { family: 'DM Mono', size: 11 },
+            callback: v => fmt(v)
+          },
+          grid: { color: gridColor }
+        }
+      }
+    }
+  });
+}
+
 function render() {
   renderHero();
   renderCards();
@@ -1195,6 +1310,7 @@ function render() {
   renderAssetBreakdown();
   renderLiabilityBreakdown();
   renderLiquidNetWorth();
+  renderBarChart();
 }
 
 // ════════════════════════════════════════════════
@@ -1442,6 +1558,8 @@ function toggleTheme() {
   // Rebuild chart so colors match new theme
   if (chart) { chart.destroy(); chart = null; }
   renderChart();
+  if (barChart) { barChart.destroy(); barChart = null; }
+  renderBarChart();
 }
 
 // ════════════════════════════════════════════════
