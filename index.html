@@ -212,6 +212,35 @@
     .card-val.a { color: var(--secondary); }
     .card-val.l { color: var(--danger); }
 
+    .card-breakdown {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .card-breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .card-breakdown-lbl {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+    }
+
+    .card-breakdown-val {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--dim);
+    }
+
     /* ── Panels / Sections ──────────────────────── */
 
     .panel {
@@ -565,6 +594,16 @@
   <div class="card">
     <div class="card-lbl">Total Assets</div>
     <div class="card-val a" id="cAssets">$0</div>
+    <div class="card-breakdown">
+      <div class="card-breakdown-row">
+        <span class="card-breakdown-lbl">Cash</span>
+        <span class="card-breakdown-val" id="cCash">$0</span>
+      </div>
+      <div class="card-breakdown-row">
+        <span class="card-breakdown-lbl">Investments</span>
+        <span class="card-breakdown-val" id="cInvestments">$0</span>
+      </div>
+    </div>
   </div>
   <div class="card">
     <div class="card-lbl">Total Liabilities</div>
@@ -1020,6 +1059,26 @@ function renderEntries() {
 }
 
 // ════════════════════════════════════════════════
+// Render — Asset Breakdown
+// ════════════════════════════════════════════════
+
+function renderAssetBreakdown() {
+  const CASH_CATS        = ['Cash & Savings', 'Retirement'];
+  const INVESTMENT_CATS  = ['Investments'];
+
+  const cash = app.entries
+    .filter(e => e.type === 'asset' && CASH_CATS.includes(e.category))
+    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+  const investments = app.entries
+    .filter(e => e.type === 'asset' && INVESTMENT_CATS.includes(e.category))
+    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+  document.getElementById('cCash').textContent        = fmt(cash);
+  document.getElementById('cInvestments').textContent = fmt(investments);
+}
+
+// ════════════════════════════════════════════════
 // Render — Liquid Net Worth
 // ════════════════════════════════════════════════
 
@@ -1043,6 +1102,7 @@ function render() {
   renderCategories();
   renderSnapshots();
   renderEntries();
+  renderAssetBreakdown();
   renderLiquidNetWorth();
 }
 
