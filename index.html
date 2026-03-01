@@ -845,7 +845,7 @@ function hydrate() {
     if (!raw) return;
     const d = JSON.parse(raw);
     if (Array.isArray(d.entries) && Array.isArray(d.snapshots)) {
-      if (!d.historicalYears) d.historicalYears = [];
+      if (!Array.isArray(d.historicalYears)) d.historicalYears = [];
       app = d;
     }
   } catch (_) {}
@@ -1221,7 +1221,8 @@ function submitYear() {
   if (isNaN(total))            { alert('Please enter a valid total net worth.');  return; }
   if (isNaN(liquid))           { alert('Please enter a valid liquid net worth.'); return; }
 
-  const existing = app.historicalYears.findIndex(y => y.year === year);
+  if (!Array.isArray(app.historicalYears)) app.historicalYears = [];
+  const existing = app.historicalYears.findIndex(y => String(y.year) === String(year));
   if (existing > -1) {
     if (!confirm(`Data for ${year} already exists. Overwrite it?`)) return;
     app.historicalYears[existing] = { year, total, liquid };
