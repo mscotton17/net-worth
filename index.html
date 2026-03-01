@@ -603,6 +603,10 @@
         <span class="card-breakdown-lbl">Investments</span>
         <span class="card-breakdown-val" id="cInvestments">$0</span>
       </div>
+      <div class="card-breakdown-row">
+        <span class="card-breakdown-lbl">Property</span>
+        <span class="card-breakdown-val" id="cProperty">$0</span>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -1074,8 +1078,15 @@ function renderAssetBreakdown() {
     .filter(e => e.type === 'asset' && INVESTMENT_CATS.includes(e.category))
     .reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
+  const PROPERTY_CATS = ['Real Estate'];
+
+  const property = app.entries
+    .filter(e => e.type === 'asset' && PROPERTY_CATS.includes(e.category))
+    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
   document.getElementById('cCash').textContent        = fmt(cash);
   document.getElementById('cInvestments').textContent = fmt(investments);
+  document.getElementById('cProperty').textContent    = fmt(property);
 }
 
 // ════════════════════════════════════════════════
