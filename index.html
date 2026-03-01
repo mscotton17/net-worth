@@ -1241,31 +1241,37 @@ function renderBarChart() {
 
   const LIQUID_CATS = ['Cash & Savings', 'Investments', 'Retirement'];
 
+  // Build year list from both entries and historicalYears
   const yearMap = {};
   for (const e of app.entries) {
-    const year = new Date(e.updatedAt).getFullYear();
-    if (!yearMap[year]) yearMap[year] = [];
-    yearMap[year].push(e);
+    const yr = String(new Date(e.updatedAt).getFullYear());
+    if (!yearMap[yr]) yearMap[yr] = [];
+    yearMap[yr].push(e);
   }
 
-  // Build year list from both entries and historicalYears
   const entryYears = Object.keys(yearMap);
   const histYears  = (app.historicalYears || []).map(h => String(h.year));
   const allYears   = [...new Set([...entryYears, ...histYears])].sort();
 
-  if (allYears.length === 0) return;
+  if (allYears.length === 0) {
+    barChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: [], datasets: [] },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+    return;
+  }
 
   const liquidData    = [];
   const nonLiquidData = [];
 
-  for (const year of allYears) {
-    // Prefer historicalYears if present for this year
-    const hist = (app.historicalYears || []).find(h => String(h.year) === year);
+  for (const yr of allYears) {
+    const hist = (app.historicalYears || []).find(h => String(h.year) === yr);
     if (hist) {
-      liquidData.push(hist.liquid);
-      nonLiquidData.push(Math.max(0, hist.total - hist.liquid));
+      liquidData.push(Number(hist.liquid) || 0);
+      nonLiquidData.push(Math.max(0, (Number(hist.total) || 0) - (Number(hist.liquid) || 0)));
     } else {
-      const entries = yearMap[year] || [];
+      const entries = yearMap[yr] || [];
       const latest = {};
       for (const e of entries) {
         if (!latest[e.name] || new Date(e.updatedAt) > new Date(latest[e.name].updatedAt)) {
@@ -1282,8 +1288,6 @@ function renderBarChart() {
     }
   }
 
-  const labels = allYears;
-
   const isDark    = !document.body.classList.contains('light');
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
   const tickColor = isDark ? '#6a6a72' : '#808090';
@@ -1291,7 +1295,7 @@ function renderBarChart() {
   barChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: labels,
+      labels: allYears,
       datasets: [
         {
           label: 'Liquid',
