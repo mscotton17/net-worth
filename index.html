@@ -158,6 +158,27 @@
     .hero-delta .pos { color: var(--secondary); }
     .hero-delta .neg-c { color: var(--danger); }
 
+    .hero-liquid {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .hero-liquid-lbl {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+
+    .hero-liquid-val {
+      font-family: var(--serif);
+      font-size: clamp(24px, 4vw, 36px);
+      color: var(--dim);
+    }
+
     /* ── Summary Cards ──────────────────────────── */
 
     .cards {
@@ -528,8 +549,12 @@
      HERO
 ════════════════════════════════════════════════ -->
 <section class="hero">
-  <div class="hero-lbl">Net Worth</div>
+  <div class="hero-lbl">Total Net Worth</div>
   <div class="hero-val" id="heroVal">$0</div>
+  <div class="hero-liquid">
+    <span class="hero-liquid-lbl">Liquid Net Worth</span>
+    <span class="hero-liquid-val" id="heroLiquidVal">$0</span>
+  </div>
   <div class="hero-delta" id="heroDelta">—</div>
 </section>
 
@@ -995,6 +1020,19 @@ function renderEntries() {
 }
 
 // ════════════════════════════════════════════════
+// Render — Liquid Net Worth
+// ════════════════════════════════════════════════
+
+const LIQUID_CATS = ['Cash & Savings', 'Investments', 'Retirement'];
+
+function renderLiquidNetWorth() {
+  const liquid = app.entries
+    .filter(e => e.type === 'asset' && LIQUID_CATS.includes(e.category))
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  document.getElementById('heroLiquidVal').textContent = fmt(liquid);
+}
+
+// ════════════════════════════════════════════════
 // Render All
 // ════════════════════════════════════════════════
 
@@ -1005,6 +1043,7 @@ function render() {
   renderCategories();
   renderSnapshots();
   renderEntries();
+  renderLiquidNetWorth();
 }
 
 // ════════════════════════════════════════════════
