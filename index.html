@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Net Worth Tracker</title>
+  <title>index</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
@@ -35,6 +35,8 @@
       --muted:   #808090;
       --dim:     #505060;
     }
+
+    body.light .logo { color: #18181c; }
 
     /* Smooth theme transitions */
     .theme-switching,
@@ -69,10 +71,11 @@
     .logo {
       font-family: var(--serif);
       font-size: clamp(20px, 3vw, 28px);
-      color: var(--accent);
+      color: #ffffff;
       line-height: 1;
       letter-spacing: -0.3px;
     }
+    .logo .tracker { color: var(--accent); }
 
     .hdr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -511,7 +514,7 @@
      HEADER
 ════════════════════════════════════════════════ -->
 <header class="app-header">
-  <div class="logo">Net Worth Tracker</div>
+  <div class="logo">Net Worth <span class="tracker">Tracker</span></div>
   <div class="hdr-actions">
     <button class="btn" id="themeBtn" onclick="toggleTheme()">☀ Light</button>
     <button class="btn" onclick="triggerCSV()">CSV Import</button>
