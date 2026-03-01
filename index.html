@@ -690,6 +690,7 @@
 <div class="panel mb">
   <div class="panel-hdr">
     <div class="panel-title">Net Worth Over Time</div>
+    <button class="btn btn-sm" onclick="openYearModal()">+ Add Year</button>
   </div>
   <div class="chart-wrap">
     <canvas id="nwBarChart"></canvas>
@@ -825,7 +826,7 @@ const LS_KEY = 'worth_v1';
 // State
 // ════════════════════════════════════════════════
 
-let app = { entries: [], snapshots: [] };
+let app = { entries: [], snapshots: [], historicalYears: [] };
 let chart = null;
 let editId = null;
 let mType  = 'asset'; // current modal type
@@ -844,6 +845,7 @@ function hydrate() {
     if (!raw) return;
     const d = JSON.parse(raw);
     if (Array.isArray(d.entries) && Array.isArray(d.snapshots)) app = d;
+    if (!d.historicalYears) d.historicalYears = [];
   } catch (_) {}
 }
 
@@ -1192,6 +1194,44 @@ function renderLiabilityBreakdown() {
 
 let barChart = null;
 
+function openYearModal() {
+  document.getElementById('fYear').value = '';
+  document.getElementById('fYearTotal').value = '';
+  document.getElementById('fYearLiquid').value = '';
+  document.getElementById('yearOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fYear').focus(), 80);
+}
+
+function closeYearModal() {
+  document.getElementById('yearOverlay').classList.remove('open');
+}
+
+function yearOverlayClick(e) {
+  if (e.target === document.getElementById('yearOverlay')) closeYearModal();
+}
+
+function submitYear() {
+  const year   = parseInt(document.getElementById('fYear').value);
+  const total  = parseFloat(document.getElementById('fYearTotal').value);
+  const liquid = parseFloat(document.getElementById('fYearLiquid').value);
+
+  if (!year || isNaN(year))   { alert('Please enter a valid year.');             return; }
+  if (isNaN(total))            { alert('Please enter a valid total net worth.');  return; }
+  if (isNaN(liquid))           { alert('Please enter a valid liquid net worth.'); return; }
+
+  const existing = app.historicalYears.findIndex(y => y.year === year);
+  if (existing > -1) {
+    if (!confirm(`Data for ${year} already exists. Overwrite it?`)) return;
+    app.historicalYears[existing] = { year, total, liquid };
+  } else {
+    app.historicalYears.push({ year, total, liquid });
+  }
+
+  persist();
+  closeYearModal();
+  renderBarChart();
+}
+
 function renderBarChart() {
   const ctx = document.getElementById('nwBarChart');
   if (!ctx) return;
@@ -1206,30 +1246,41 @@ function renderBarChart() {
     yearMap[year].push(e);
   }
 
-  const years = Object.keys(yearMap).sort();
-  if (years.length === 0) return;
+  // Build year list from both entries and historicalYears
+  const entryYears = Object.keys(yearMap);
+  const histYears  = (app.historicalYears || []).map(h => String(h.year));
+  const allYears   = [...new Set([...entryYears, ...histYears])].sort();
+
+  if (allYears.length === 0) return;
 
   const liquidData    = [];
   const nonLiquidData = [];
 
-  for (const year of years) {
-    const entries = yearMap[year];
-    const latest = {};
-    for (const e of entries) {
-      if (!latest[e.name] || new Date(e.updatedAt) > new Date(latest[e.name].updatedAt)) {
-        latest[e.name] = e;
+  for (const year of allYears) {
+    // Prefer historicalYears if present for this year
+    const hist = (app.historicalYears || []).find(h => String(h.year) === year);
+    if (hist) {
+      liquidData.push(hist.liquid);
+      nonLiquidData.push(Math.max(0, hist.total - hist.liquid));
+    } else {
+      const entries = yearMap[year] || [];
+      const latest = {};
+      for (const e of entries) {
+        if (!latest[e.name] || new Date(e.updatedAt) > new Date(latest[e.name].updatedAt)) {
+          latest[e.name] = e;
+        }
       }
+      const deduped     = Object.values(latest);
+      const assets      = deduped.filter(e => e.type === 'asset').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const liabilities = deduped.filter(e => e.type === 'liability').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const netWorth    = assets - liabilities;
+      const liquid      = deduped.filter(e => e.type === 'asset' && LIQUID_CATS.includes(e.category)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      liquidData.push(liquid);
+      nonLiquidData.push(Math.max(0, netWorth - liquid));
     }
-    const deduped = Object.values(latest);
-    const assets      = deduped.filter(e => e.type === 'asset').reduce((s, e) => s + (Number(e.amount) || 0), 0);
-    const liabilities = deduped.filter(e => e.type === 'liability').reduce((s, e) => s + (Number(e.amount) || 0), 0);
-    const netWorth    = assets - liabilities;
-    const liquid      = deduped.filter(e => e.type === 'asset' && LIQUID_CATS.includes(e.category)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-    const nonLiquid   = Math.max(0, netWorth - liquid);
-
-    liquidData.push(liquid);
-    nonLiquidData.push(nonLiquid);
   }
+
+  const labels = allYears;
 
   const isDark    = !document.body.classList.contains('light');
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
@@ -1238,7 +1289,7 @@ function renderBarChart() {
   barChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: years,
+      labels: labels,
       datasets: [
         {
           label: 'Liquid',
@@ -1520,7 +1571,7 @@ function confirmDelete() {
     alert('Incorrect confirmation. Type DELETE in all caps to delete all data.');
     return;
   }
-  app = { entries: [], snapshots: [] };
+  app = { entries: [], snapshots: [], historicalYears: [] };
   persist();
   render();
   alert('All data has been deleted.');
@@ -1578,5 +1629,27 @@ if (localStorage.getItem('worth_theme') === 'light') {
 
 render();
 </script>
+
+<div class="overlay" id="yearOverlay" onclick="yearOverlayClick(event)">
+  <div class="modal" id="yearModal">
+    <div class="modal-title">Add Historical Year</div>
+    <div class="field">
+      <label class="field-lbl" for="fYear">Year</label>
+      <input type="number" id="fYear" placeholder="e.g. 2022" min="1900" max="2100">
+    </div>
+    <div class="field">
+      <label class="field-lbl" for="fYearTotal">Total Net Worth ($)</label>
+      <input type="number" id="fYearTotal" placeholder="0" min="0" step="any">
+    </div>
+    <div class="field">
+      <label class="field-lbl" for="fYearLiquid">Liquid Net Worth ($)</label>
+      <input type="number" id="fYearLiquid" placeholder="0" min="0" step="any">
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeYearModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitYear()">Save</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
