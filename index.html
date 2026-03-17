@@ -656,9 +656,14 @@
   <div class="lock-card">
     <div class="lock-logo">Net Worth <span class="tracker">Tracker</span></div>
     <div class="lock-sub">Password protected</div>
-    <input type="password" id="lockInput" class="field-input" placeholder="Enter password"
+    <input type="text" id="lockUser" class="field-input" placeholder="Username"
+           style="width:100%;margin-bottom:10px;text-align:center"
+           onkeydown="if(event.key==='Enter')document.getElementById('lockInput').focus()"
+           autocomplete="username">
+    <input type="password" id="lockInput" class="field-input" placeholder="Password"
            style="width:100%;margin-bottom:12px;text-align:center"
-           onkeydown="if(event.key==='Enter')tryUnlock()">
+           onkeydown="if(event.key==='Enter')tryUnlock()"
+           autocomplete="current-password">
     <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:13px"
             onclick="tryUnlock()">Unlock</button>
     <div class="lock-error" id="lockError"></div>
@@ -1434,7 +1439,8 @@ function renderBarChart() {
 // Auth
 // ════════════════════════════════════════════════
 
-const AUTH_KEY = 'worth_auth';
+const AUTH_KEY  = 'worth_auth';
+const AUTH_USER = 'worth_user';
 
 async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -1442,8 +1448,11 @@ async function sha256(str) {
 }
 
 function showLockScreen() {
+  document.getElementById('lockUser').value  = '';
+  document.getElementById('lockInput').value = '';
+  document.getElementById('lockError').textContent = '';
   document.getElementById('lockScreen').classList.remove('hidden');
-  setTimeout(() => document.getElementById('lockInput').focus(), 80);
+  setTimeout(() => document.getElementById('lockUser').focus(), 80);
 }
 
 function hideLockScreen() {
@@ -1451,16 +1460,21 @@ function hideLockScreen() {
 }
 
 async function tryUnlock() {
+  const user  = document.getElementById('lockUser').value.trim();
   const input = document.getElementById('lockInput').value;
-  if (!input) return;
+  if (!user || !input) {
+    document.getElementById('lockError').textContent = 'Enter your username and password.';
+    return;
+  }
   const hash = await sha256(input);
-  if (hash === localStorage.getItem(AUTH_KEY)) {
+  const userMatch = user === localStorage.getItem(AUTH_USER);
+  const passMatch = hash === localStorage.getItem(AUTH_KEY);
+  if (userMatch && passMatch) {
     document.getElementById('lockError').textContent = '';
-    document.getElementById('lockInput').value = '';
     hideLockScreen();
     render();
   } else {
-    document.getElementById('lockError').textContent = 'Incorrect password.';
+    document.getElementById('lockError').textContent = 'Incorrect username or password.';
     document.getElementById('lockInput').value = '';
     setTimeout(() => document.getElementById('lockInput').focus(), 0);
   }
@@ -1480,12 +1494,13 @@ function updateAuthUI() {
 
 function openPwdModal() {
   document.getElementById('settingsDropdown').classList.remove('open');
+  document.getElementById('fPwdUser').value    = localStorage.getItem(AUTH_USER) || '';
   document.getElementById('fPwdNew').value     = '';
   document.getElementById('fPwdConfirm').value = '';
   document.getElementById('pwdModalTitle').textContent =
     localStorage.getItem(AUTH_KEY) ? 'Change Password' : 'Set Password';
   document.getElementById('pwdOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fPwdNew').focus(), 80);
+  setTimeout(() => document.getElementById('fPwdUser').focus(), 80);
 }
 
 function closePwdModal() {
@@ -1493,11 +1508,14 @@ function closePwdModal() {
 }
 
 async function submitPassword() {
-  const newPwd  = document.getElementById('fPwdNew').value;
-  const confirm = document.getElementById('fPwdConfirm').value;
-  if (!newPwd)            { alert('Please enter a password.');      return; }
+  const username = document.getElementById('fPwdUser').value.trim();
+  const newPwd   = document.getElementById('fPwdNew').value;
+  const confirm  = document.getElementById('fPwdConfirm').value;
+  if (!username)          { alert('Please enter a username.');       return; }
+  if (!newPwd)            { alert('Please enter a password.');       return; }
   if (newPwd !== confirm) { alert('Passwords do not match.');        return; }
   const hash = await sha256(newPwd);
+  localStorage.setItem(AUTH_USER, username);
   localStorage.setItem(AUTH_KEY, hash);
   closePwdModal();
   updateAuthUI();
@@ -1507,6 +1525,7 @@ function removePassword() {
   document.getElementById('settingsDropdown').classList.remove('open');
   if (!confirm('Remove password protection? Anyone with access to this device will be able to view your data.')) return;
   localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_USER);
   updateAuthUI();
 }
 
@@ -1978,14 +1997,22 @@ if (localStorage.getItem(AUTH_KEY)) {
   <div class="modal">
     <div class="modal-title" id="pwdModalTitle">Set Password</div>
     <div class="field">
+      <label class="field-lbl" for="fPwdUser">Username</label>
+      <input type="text" id="fPwdUser" placeholder="Enter username"
+             onkeydown="if(event.key==='Enter')document.getElementById('fPwdNew').focus()"
+             autocomplete="username">
+    </div>
+    <div class="field">
       <label class="field-lbl" for="fPwdNew">New Password</label>
       <input type="password" id="fPwdNew" placeholder="Enter new password"
-             onkeydown="if(event.key==='Enter')document.getElementById('fPwdConfirm').focus()">
+             onkeydown="if(event.key==='Enter')document.getElementById('fPwdConfirm').focus()"
+             autocomplete="new-password">
     </div>
     <div class="field">
       <label class="field-lbl" for="fPwdConfirm">Confirm Password</label>
       <input type="password" id="fPwdConfirm" placeholder="Confirm new password"
-             onkeydown="if(event.key==='Enter')submitPassword()">
+             onkeydown="if(event.key==='Enter')submitPassword()"
+             autocomplete="new-password">
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closePwdModal()">Cancel</button>
