@@ -482,6 +482,50 @@
 
     /* ── Modal ──────────────────────────────────── */
 
+    /* ── Lock screen ────────────────────────────── */
+
+    #lockScreen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #lockScreen.hidden { display: none; }
+    .lock-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+    .lock-logo {
+      font-family: var(--serif);
+      font-size: 26px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .lock-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .lock-error {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #f87171;
+      margin-top: 10px;
+      min-height: 18px;
+    }
+
     .overlay {
       position: fixed;
       inset: 0;
@@ -608,6 +652,19 @@
 </head>
 <body>
 
+<div id="lockScreen" class="hidden">
+  <div class="lock-card">
+    <div class="lock-logo">Net Worth <span class="tracker">Tracker</span></div>
+    <div class="lock-sub">Password protected</div>
+    <input type="password" id="lockInput" class="field-input" placeholder="Enter password"
+           style="width:100%;margin-bottom:12px;text-align:center"
+           onkeydown="if(event.key==='Enter')tryUnlock()">
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:13px"
+            onclick="tryUnlock()">Unlock</button>
+    <div class="lock-error" id="lockError"></div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════════════
      HEADER
 ════════════════════════════════════════════════ -->
@@ -623,6 +680,11 @@
       <div class="settings-item" onclick="triggerCSV()">CSV Import</div>
       <div class="settings-item" onclick="triggerJSON()">Import JSON</div>
       <div class="settings-item" onclick="doExport()">Export JSON</div>
+      <div class="settings-divider"></div>
+      <div class="settings-divider"></div>
+      <div class="settings-item" id="setPwdItem" onclick="openPwdModal()">Set Password</div>
+      <div class="settings-item" id="lockItem" style="display:none" onclick="lockApp()">Lock</div>
+      <div class="settings-item settings-item-danger" id="removePwdItem" style="display:none" onclick="removePassword()">Remove Password</div>
       <div class="settings-divider"></div>
       <div class="settings-item settings-item-danger" onclick="confirmDelete()">Delete All Data</div>
     </div>
@@ -1368,6 +1430,88 @@ function renderBarChart() {
   });
 }
 
+// ════════════════════════════════════════════════
+// Auth
+// ════════════════════════════════════════════════
+
+const AUTH_KEY = 'worth_auth';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function showLockScreen() {
+  document.getElementById('lockScreen').classList.remove('hidden');
+  setTimeout(() => document.getElementById('lockInput').focus(), 80);
+}
+
+function hideLockScreen() {
+  document.getElementById('lockScreen').classList.add('hidden');
+}
+
+async function tryUnlock() {
+  const input = document.getElementById('lockInput').value;
+  if (!input) return;
+  const hash = await sha256(input);
+  if (hash === localStorage.getItem(AUTH_KEY)) {
+    document.getElementById('lockError').textContent = '';
+    document.getElementById('lockInput').value = '';
+    hideLockScreen();
+    render();
+  } else {
+    document.getElementById('lockError').textContent = 'Incorrect password.';
+    document.getElementById('lockInput').value = '';
+    setTimeout(() => document.getElementById('lockInput').focus(), 0);
+  }
+}
+
+function lockApp() {
+  document.getElementById('settingsDropdown').classList.remove('open');
+  showLockScreen();
+}
+
+function updateAuthUI() {
+  const hasPwd = !!localStorage.getItem(AUTH_KEY);
+  document.getElementById('setPwdItem').textContent = hasPwd ? 'Change Password' : 'Set Password';
+  document.getElementById('lockItem').style.display   = hasPwd ? '' : 'none';
+  document.getElementById('removePwdItem').style.display = hasPwd ? '' : 'none';
+}
+
+function openPwdModal() {
+  document.getElementById('settingsDropdown').classList.remove('open');
+  document.getElementById('fPwdNew').value     = '';
+  document.getElementById('fPwdConfirm').value = '';
+  document.getElementById('pwdModalTitle').textContent =
+    localStorage.getItem(AUTH_KEY) ? 'Change Password' : 'Set Password';
+  document.getElementById('pwdOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fPwdNew').focus(), 80);
+}
+
+function closePwdModal() {
+  document.getElementById('pwdOverlay').classList.remove('open');
+}
+
+async function submitPassword() {
+  const newPwd  = document.getElementById('fPwdNew').value;
+  const confirm = document.getElementById('fPwdConfirm').value;
+  if (!newPwd)            { alert('Please enter a password.');      return; }
+  if (newPwd !== confirm) { alert('Passwords do not match.');        return; }
+  const hash = await sha256(newPwd);
+  localStorage.setItem(AUTH_KEY, hash);
+  closePwdModal();
+  updateAuthUI();
+}
+
+function removePassword() {
+  document.getElementById('settingsDropdown').classList.remove('open');
+  if (!confirm('Remove password protection? Anyone with access to this device will be able to view your data.')) return;
+  localStorage.removeItem(AUTH_KEY);
+  updateAuthUI();
+}
+
+// ════════════════════════════════════════════════
+
 let donutChart = null;
 
 function openPortfolioModal() {
@@ -1770,10 +1914,16 @@ hydrate();
 // Restore saved theme (dark is default — only apply class for light)
 if (localStorage.getItem('worth_theme') === 'light') {
   document.body.classList.add('light');
-  document.getElementById('themeBtn').textContent = '☽ Dark';
+  document.getElementById('themeLabel').textContent = '☽ Dark Mode';
 }
 
-render();
+updateAuthUI();
+
+if (localStorage.getItem(AUTH_KEY)) {
+  showLockScreen();
+} else {
+  render();
+}
 </script>
 
 <div class="overlay" id="yearOverlay" onclick="yearOverlayClick(event)">
@@ -1820,6 +1970,26 @@ render();
     <div class="modal-foot">
       <button class="btn" onclick="closePortfolioModal()">Cancel</button>
       <button class="btn btn-primary" onclick="submitPortfolio()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="pwdOverlay" onclick="if(event.target===this)closePwdModal()">
+  <div class="modal">
+    <div class="modal-title" id="pwdModalTitle">Set Password</div>
+    <div class="field">
+      <label class="field-lbl" for="fPwdNew">New Password</label>
+      <input type="password" id="fPwdNew" placeholder="Enter new password"
+             onkeydown="if(event.key==='Enter')document.getElementById('fPwdConfirm').focus()">
+    </div>
+    <div class="field">
+      <label class="field-lbl" for="fPwdConfirm">Confirm Password</label>
+      <input type="password" id="fPwdConfirm" placeholder="Confirm new password"
+             onkeydown="if(event.key==='Enter')submitPassword()">
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closePwdModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitPassword()">Save</button>
     </div>
   </div>
 </div>
