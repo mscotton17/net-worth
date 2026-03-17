@@ -762,6 +762,7 @@
   <div class="chart-wrap">
     <canvas id="nwBarChart"></canvas>
   </div>
+  <div id="histYearList"></div>
 </div>
 
 <div class="panel mb">
@@ -1276,17 +1277,35 @@ function renderLiabilityBreakdown() {
 }
 
 let barChart = null;
+let editYearIdx = null;
 
-function openYearModal() {
-  document.getElementById('fYear').value = '';
-  document.getElementById('fYearTotal').value = '';
-  document.getElementById('fYearLiquid').value = '';
+function openYearModal(idx) {
+  editYearIdx = (idx !== undefined) ? idx : null;
+  if (editYearIdx !== null) {
+    const h = app.historicalYears[editYearIdx];
+    document.getElementById('fYear').value       = h.year;
+    document.getElementById('fYearTotal').value  = h.total;
+    document.getElementById('fYearLiquid').value = h.liquid;
+    document.getElementById('yearModalTitle').textContent = 'Edit Historical Year';
+    document.getElementById('fYear').readOnly = true;
+  } else {
+    document.getElementById('fYear').value        = '';
+    document.getElementById('fYearTotal').value   = '';
+    document.getElementById('fYearLiquid').value  = '';
+    document.getElementById('yearModalTitle').textContent = 'Add Historical Year';
+    document.getElementById('fYear').readOnly = false;
+  }
   document.getElementById('yearOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fYear').focus(), 80);
+  setTimeout(() => {
+    const focus = editYearIdx !== null ? 'fYearTotal' : 'fYear';
+    document.getElementById(focus).focus();
+  }, 80);
 }
 
 function closeYearModal() {
   document.getElementById('yearOverlay').classList.remove('open');
+  document.getElementById('fYear').readOnly = false;
+  editYearIdx = null;
 }
 
 function yearOverlayClick(e) {
@@ -1303,12 +1322,17 @@ function submitYear() {
   if (isNaN(liquid))           { alert('Please enter a valid liquid net worth.'); return; }
 
   if (!Array.isArray(app.historicalYears)) app.historicalYears = [];
-  const existing = app.historicalYears.findIndex(y => String(y.year) === String(year));
-  if (existing > -1) {
-    if (!confirm(`Data for ${year} already exists. Overwrite it?`)) return;
-    app.historicalYears[existing] = { year, total, liquid };
+
+  if (editYearIdx !== null) {
+    app.historicalYears[editYearIdx] = { year, total, liquid };
   } else {
-    app.historicalYears.push({ year, total, liquid });
+    const existing = app.historicalYears.findIndex(y => String(y.year) === String(year));
+    if (existing > -1) {
+      if (!confirm(`Data for ${year} already exists. Overwrite it?`)) return;
+      app.historicalYears[existing] = { year, total, liquid };
+    } else {
+      app.historicalYears.push({ year, total, liquid });
+    }
   }
 
   persist();
@@ -1316,7 +1340,42 @@ function submitYear() {
   renderBarChart();
 }
 
+function deleteHistYear(year) {
+  if (!confirm(`Delete data for ${year}?`)) return;
+  app.historicalYears = app.historicalYears.filter(h => String(h.year) !== String(year));
+  persist();
+  renderBarChart();
+}
+
+function renderHistYearList() {
+  const el = document.getElementById('histYearList');
+  if (!app.historicalYears || app.historicalYears.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  const sorted = [...app.historicalYears].sort((a, b) => b.year - a.year);
+  el.innerHTML = `
+    <table class="entries-table" style="margin-top:16px">
+      <thead><tr>
+        <th>Year</th><th>Total Net Worth</th><th>Liquid Net Worth</th><th></th>
+      </tr></thead>
+      <tbody>${sorted.map(h => {
+        const idx = app.historicalYears.findIndex(y => String(y.year) === String(h.year));
+        return `<tr>
+          <td>${h.year}</td>
+          <td>${fmt(h.total)}</td>
+          <td>${fmt(h.liquid)}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn btn-sm" onclick="openYearModal(${idx})" style="margin-right:4px">Edit</button>
+            <button class="btn btn-sm btn-del" onclick="deleteHistYear(${h.year})">Delete</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
 function renderBarChart() {
+  renderHistYearList();
   const ctx = document.getElementById('nwBarChart');
   if (!ctx) return;
   if (barChart) { barChart.destroy(); barChart = null; }
@@ -1947,7 +2006,7 @@ if (localStorage.getItem(AUTH_KEY)) {
 
 <div class="overlay" id="yearOverlay" onclick="yearOverlayClick(event)">
   <div class="modal" id="yearModal">
-    <div class="modal-title">Add Historical Year</div>
+    <div class="modal-title" id="yearModalTitle">Add Historical Year</div>
     <div class="field">
       <label class="field-lbl" for="fYear">Year</label>
       <input type="number" id="fYear" placeholder="e.g. 2022" min="1900" max="2100">
